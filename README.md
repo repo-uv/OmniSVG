@@ -65,25 +65,26 @@ If you are developing / using OmniSVG in your projects, or you want to contribut
 
 
 ##  3. Dependencies and Installation
-The dependencies configured according to the following instructions provide an environment equipped for inference
+The following setup is the supported path for local inference and the Gradio demo.
 
 ### 3.1 Clone the Repository
 ```bash
 git clone https://github.com/OmniSVG/OmniSVG.git
 cd OmniSVG
+git submodule update --init --recursive
 ```
 
-### 3.2 Create Conda Environment
-Create and activate a new conda environment with Python 3.10:
+### 3.2 Create a `uv` Environment
+Pin the project to Python 3.12 and create the local environment with `uv`:
 ```bash
-conda create -n omnisvg python=3.10
-conda activate omnisvg
+uv python pin 3.12
+uv sync
 ```
 
 ### 3.3 Install Dependencies
 
 #### System Dependencies
-Before installing Python packages, you need to install Cairo library which is required by `CairoSVG` in our dependencies:
+Before syncing Python packages, install the Cairo system library required by `CairoSVG`:
 
 **macOS:**
 ```bash
@@ -96,20 +97,40 @@ sudo apt update
 sudo apt install libcairo2 libcairo2-dev
 ```
 
-> **Note:** Installing Cairo system library beforehand helps prevent potential build errors when installing `CairoSVG` via pip.
+**Windows:** `CairoSVG` depends on a native Cairo DLL. Install a **64-bit** Cairo runtime or another provider that places `libcairo-2.dll` on `PATH` before running the app or inference CLI. A 64-bit GTK runtime such as the `tschoonj/GTK-for-Windows-Runtime-Environment-Installer` releases or a 64-bit MSYS2 runtime works. Avoid the old 32-bit `gtk-runtime` Chocolatey package for this Python 3.12 x64 setup.
 
-#### Python Dependencies
-We have tested our environment with CUDA 12.1. You can install CUDA 12.1 by following the [CUDA Toolkit installation guide](https://developer.nvidia.com/cuda-12-1-0-download-archive).
+### 3.4 Cairo Source and Windows Runtime Strategy
+This repository tracks Cairo source in `third_party/cairo` as a git submodule for source availability, notices, and clean upstream updates. See `THIRD_PARTY_NOTICES.md` for the pinned revision and license details.
 
-Install PyTorch with CUDA 12.1 support:
-```bash
-pip install torch==2.3.0+cu121 torchvision==0.18.0+cu121 --index-url https://download.pytorch.org/whl/cu121
+On Windows, OmniSVG does **not** bundle Cairo DLLs by default. The recommended path is to use a separately installed or workspace-local **64-bit** Cairo runtime so the library remains replaceable. If the DLL is installed in a non-standard location, set `OMNISVG_CAIRO_BIN` or use the helper wrapper:
+
+```powershell
+pwsh -File scripts/windows/with_cairo_runtime.ps1 uv run python app.py
+pwsh -File scripts/windows/with_cairo_runtime.ps1 uv run python inference.py --help
 ```
 
-Install remaining dependencies:
+The wrapper checks these locations first:
+
+- `.cairo-runtime64\bin`
+- `OMNISVG_CAIRO_BIN`
+- common system runtime locations
+
+If you choose the workspace-local path, place the 64-bit runtime under `.cairo-runtime64\bin` and keep it out of version control.
+
+If you later distribute Cairo binaries with OmniSVG, keep the Cairo license text with the distribution and make the corresponding Cairo source available as required by the chosen Cairo license.
+
+#### Python and CUDA Notes
+As of **April 22, 2026**, the official PyTorch release stream includes **PyTorch 2.11.0**, and the official wheel indexes contain Windows `cp312` wheels for **CUDA 13.0**. The main PyTorch install selector page may lag behind those releases, so this repository targets Python 3.12 plus the official CUDA 13.0 wheels on Windows.
+
+`pyproject.toml` pins `torch==2.11.0` and `torchvision==0.26.0` to the PyTorch CUDA 13.0 index, so `uv sync` installs the intended GPU build automatically.
+
+If you want to recreate the environment from scratch:
 ```bash
-pip install -r requirements.txt
+uv python install 3.12
+uv sync
 ```
+
+For a metrics-only workflow, note that some scripts in `metrics/` require additional research packages and checkpoints beyond the core runtime environment.
 
 ## 4. Inference Script
 
@@ -126,57 +147,54 @@ pip install -r requirements.txt
 
 **Download Model Weights**
 
-First, install the Hugging Face CLI tool:
-```bash
-pip install huggingface-hub
-```
-
 **Download the model from Hugging Face:**
 ```bash
 # Download OmniSVG1.1-8B
-huggingface-cli download OmniSVG/OmniSVG1.1_8B --local-dir /PATH/TO/OmniSVG1.1_8B
+uv run huggingface-cli download OmniSVG/OmniSVG1.1_8B --local-dir /PATH/TO/OmniSVG1.1_8B
 
 # Download OmniSVG1.1-4B
-huggingface-cli download OmniSVG/OmniSVG1.1_4B --local-dir /PATH/TO/OmniSVG1.1_4B
+uv run huggingface-cli download OmniSVG/OmniSVG1.1_4B --local-dir /PATH/TO/OmniSVG1.1_4B
 
 # Download OmniSVG-3B (legacy)
-huggingface-cli download OmniSVG/OmniSVG --local-dir /PATH/TO/OmniSVG-3B
+uv run huggingface-cli download OmniSVG/OmniSVG --local-dir /PATH/TO/OmniSVG-3B
 ```
 
 ### Text-to-SVG Generation
 
+On Windows, prefix the CLI commands below with `pwsh -File scripts/windows/with_cairo_runtime.ps1` unless `libcairo-2.dll` is already on `PATH`.
+
 **Basic usage - Generate SVG from txt file:**
 ```bash
-python inference.py --task text-to-svg --input prompts.txt --output ./output_text --save-all-candidates
+uv run python inference.py --task text-to-svg --input prompts.txt --output ./output_text --save-all-candidates
 ```
 
 **Use 4B model:**
 ```bash
-python inference.py --task text-to-svg --input prompts.txt --output ./output_text --model-size 4B --save-all-candidates
+uv run python inference.py --task text-to-svg --input prompts.txt --output ./output_text --model-size 4B --save-all-candidates
 ```
 
 **Generate more candidates and save PNG:**
 ```bash
-python inference.py --task text-to-svg --input prompts.txt --output ./output_text \
+uv run python inference.py --task text-to-svg --input prompts.txt --output ./output_text \
     --num-candidates 8 --save-png --save-all-candidates
 ```
 
 **Custom generation parameters:**
 ```bash
-python inference.py --task text-to-svg --input prompts.txt --output ./output_text \
+uv run python inference.py --task text-to-svg --input prompts.txt --output ./output_text \
     --temperature 0.5 --top-p 0.9 --top-k 50 --repetition-penalty 1.05
 ```
 
 **Use local model:**
 ```bash
-python inference.py --task text-to-svg --input prompts.txt --output ./output_text \
+uv run python inference.py --task text-to-svg --input prompts.txt --output ./output_text \
     --model-path /path/to/qwen --weight-path /path/to/omnisvg
 ```
 
 ### Image-to-SVG Generation
 
 ```bash
-python inference.py --task image-to-svg --input ./examples --output ./output_image --save-all-candidates
+uv run python inference.py --task image-to-svg --input ./examples --output ./output_image --save-all-candidates
 ```
 
 ### Interactive Demo
@@ -185,8 +203,10 @@ We provide an interactive generation interface using Gradio:
 
 - **Local Deployment**
   ```bash
-  python app.py
+  uv run python app.py
   ```
+
+  On Windows, use `pwsh -File scripts/windows/with_cairo_runtime.ps1 uv run python app.py` if the Cairo DLL is installed outside your default `PATH`.
 
 - **Online Demo**
   
@@ -205,7 +225,7 @@ We provide **MMSVGBench** for standardized evaluation of SVG generation models.
 
 **Download MMSVGBench:**
 ```bash
-huggingface-cli download OmniSVG/MMSVGBench --repo-type dataset --local-dir /PATH/TO/MMSVGBench
+uv run huggingface-cli download OmniSVG/MMSVGBench --repo-type dataset --local-dir /PATH/TO/MMSVGBench
 ```
 
 ### Benchmark Overview

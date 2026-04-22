@@ -64,6 +64,8 @@ __pycache__/
 env/
 venv/
 .venv/
+.cairo-runtime/
+.cairo-runtime64/
 pip-log.txt
 .pytest_cache/
 
@@ -107,6 +109,7 @@ target/
 .history/
 .vscode-test/
 *.lock
+!uv.lock
 package-lock.json
 yarn.lock
 
