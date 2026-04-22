@@ -2,6 +2,7 @@
 # Source of truth: pyproject.toml and uv.lock.
 # For Windows GPU installs, prefer `uv sync` so torch/torchvision come from the
 # CUDA 13.0 PyTorch index configured in pyproject.toml.
+accelerate>=1.11.0,<2
 gradio>=5.37.0,<6
 transformers>=4.51.3,<5
 huggingface-hub>=0.31,<1
