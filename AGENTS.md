@@ -10,6 +10,7 @@
 `uv run python inference.py --task text-to-svg --input prompts.txt --output ./output_text --save-all-candidates` runs batch text generation.  
 `uv run python inference.py --task image-to-svg --input ./examples --output ./output_image --save-all-candidates` runs image-conditioned generation.  
 `uv run huggingface-cli download OmniSVG/OmniSVG1.1_8B --local-dir /PATH/TO/OmniSVG1.1_8B` downloads model weights inside the managed environment.  
+When overriding model paths, keep the official pairings aligned: `4B` uses `Qwen/Qwen2.5-VL-3B-Instruct` with `OmniSVG/OmniSVG1.1_4B`, and `8B` uses `Qwen/Qwen2.5-VL-7B-Instruct` with `OmniSVG/OmniSVG1.1_8B`.  
 Use `uv run python metrics/compute_fid.py ...` or the related `metrics/compute_*.py` scripts to evaluate generated outputs; several metric scripts need extra research dependencies beyond the core `uv sync`.
 
 ## Coding Style & Naming Conventions

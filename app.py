@@ -565,31 +565,7 @@ def load_models(model_size: str, weight_path: str = None, model_path: str = None
         bin_path = download_model_weights(weight_path, "pytorch_model.bin")
     
     state_dict = torch.load(bin_path, map_location='cpu')
-    remapped_state_dict = {}
-    remapped_keys = 0
-    for key, value in state_dict.items():
-        new_key = key
-        if key.startswith("transformer.visual."):
-            new_key = "transformer.model.visual." + key[len("transformer.visual."):]
-        elif key.startswith("transformer.model.layers."):
-            new_key = "transformer.model.language_model.layers." + key[len("transformer.model.layers."):]
-        elif key == "transformer.model.embed_tokens.weight":
-            new_key = "transformer.model.language_model.embed_tokens.weight"
-        elif key == "transformer.model.norm.weight":
-            new_key = "transformer.model.language_model.norm.weight"
-
-        if new_key != key:
-            remapped_keys += 1
-        remapped_state_dict[new_key] = value
-
-    if remapped_keys:
-        print(f"Remapped {remapped_keys} checkpoint keys to the current Qwen 2.5 VL layout.")
-
-    load_result = sketch_decoder.load_state_dict(remapped_state_dict, strict=False)
-    if load_result.missing_keys:
-        print(f"Accepted {len(load_result.missing_keys)} missing base-model keys from the pretrained Qwen initialization.")
-    if load_result.unexpected_keys:
-        print(f"Accepted {len(load_result.unexpected_keys)} unexpected checkpoint keys.")
+    sketch_decoder.load_state_dict(state_dict)
     print("OmniSVG weights loaded successfully!")
     
     sketch_decoder = sketch_decoder.to(device).eval()

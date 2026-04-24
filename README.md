@@ -124,6 +124,8 @@ As of **April 22, 2026**, the official PyTorch release stream includes **PyTorch
 
 `pyproject.toml` pins `torch==2.11.0` and `torchvision==0.26.0` to the PyTorch CUDA 13.0 index, so `uv sync` installs the intended GPU build automatically.
 
+To stay closer to the repo's authored inference code, the rest of the core runtime is pinned to the same versions used in the original `requirements.txt`, including `transformers==4.51.3`, `gradio==5.37.0`, `qwen-vl-utils==0.0.11`, `numpy==2.2.6`, `Pillow==10.1.0`, `CairoSVG==2.7.1`, and related utility packages. The main intentional divergence is the modernized Python/PyTorch/CUDA path for Windows and `uv`.
+
 If you want to recreate the environment from scratch:
 ```bash
 uv python install 3.12
@@ -159,6 +161,13 @@ uv run huggingface-cli download OmniSVG/OmniSVG1.1_4B --local-dir /PATH/TO/OmniS
 uv run huggingface-cli download OmniSVG/OmniSVG --local-dir /PATH/TO/OmniSVG-3B
 ```
 
+**Supported model pairs**
+
+- `4B` must use `Qwen/Qwen2.5-VL-3B-Instruct` with `OmniSVG/OmniSVG1.1_4B`
+- `8B` must use `Qwen/Qwen2.5-VL-7B-Instruct` with `OmniSVG/OmniSVG1.1_8B`
+
+These are the configured and recommended pairings in `config.yaml`. If you override `--model-path` or `--weight-path`, keep them aligned with the selected `--model-size`.
+
 ### Text-to-SVG Generation
 
 On Windows, prefix the CLI commands below with `pwsh -File scripts/windows/with_cairo_runtime.ps1` unless `libcairo-2.dll` is already on `PATH`.
@@ -189,6 +198,22 @@ uv run python inference.py --task text-to-svg --input prompts.txt --output ./out
 ```bash
 uv run python inference.py --task text-to-svg --input prompts.txt --output ./output_text \
     --model-path /path/to/qwen --weight-path /path/to/omnisvg
+```
+
+For example, these are the valid local override combinations:
+
+```bash
+# 4B
+uv run python inference.py --task text-to-svg --input prompts.txt --output ./output_text \
+    --model-size 4B \
+    --model-path /path/to/Qwen2.5-VL-3B-Instruct \
+    --weight-path /path/to/OmniSVG1.1_4B
+
+# 8B
+uv run python inference.py --task text-to-svg --input prompts.txt --output ./output_text \
+    --model-size 8B \
+    --model-path /path/to/Qwen2.5-VL-7B-Instruct \
+    --weight-path /path/to/OmniSVG1.1_8B
 ```
 
 ### Image-to-SVG Generation
